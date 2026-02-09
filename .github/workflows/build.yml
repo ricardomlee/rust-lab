@@ -27,6 +27,10 @@ jobs:
           cargo build --release
           cp target/release/rust-lab ./rust-lab
 
+      - name: Extract git short sha
+        id: vars
+        run: echo "SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -39,5 +43,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/rust-lab:latest
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/rust-lab:latest
+            ghcr.io/${{ github.repository_owner }}/rust-lab:sha-${{ steps.vars.outputs.SHA_SHORT }}
 
