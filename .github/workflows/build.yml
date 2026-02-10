@@ -19,6 +19,12 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+
+      - name: Build wasm (web)
+        run: wasm-pack build wasm --target web --out-dir static/wasm
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
