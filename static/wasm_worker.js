@@ -3,7 +3,18 @@ let ready = false;
 
 async function initWasm() {
   try {
-    const mod = await import('./wasm/wasm_lab.js');
+    // sanity-check the wasm JS module before dynamic import to surface clear errors
+    try {
+      const head = await fetch('/wasm/wasm_lab.js', { method: 'HEAD' });
+      if (!head.ok) {
+        throw new Error(`HEAD /wasm/wasm_lab.js returned ${head.status}`);
+      }
+    } catch (err) {
+      postMessage({ type: 'error', error: `wasm JS not reachable: ${err}` });
+      return;
+    }
+
+    const mod = await import('/wasm/wasm_lab.js');
     if (typeof mod.default === 'function') await mod.default();
     wasm = mod;
     ready = true;

@@ -33,7 +33,7 @@ const pending = new Map();
 
 function initWorker() {
   try {
-    worker = new Worker('/wasm_worker.js');
+    worker = new Worker('/wasm_worker.js', { type: 'module' });
     worker.onmessage = (ev) => {
       const m = ev.data;
       if (m && m.type === 'ready') {
