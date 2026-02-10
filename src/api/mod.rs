@@ -1,9 +1,13 @@
 use axum::{
-    routing::get,
+    routing::{get, post},
     Json, Router,
 };
 use serde::Serialize;
 use std::time::{SystemTime, UNIX_EPOCH};
+
+mod text;
+mod error;
+mod base;
 
 #[derive(Serialize)]
 struct Health {
@@ -24,6 +28,9 @@ async fn health() -> Json<Health> {
 }
 
 pub fn router() -> Router {
-    Router::new().route("/health", get(health))
+    Router::new()
+    .route("/health", get(health))
+    .route("/text/analyze", post(text::analyze))
+    .route("/base/convert", post(base::convert))
 }
 

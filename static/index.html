@@ -1,42 +1,48 @@
 <!doctype html>
 <html lang="zh">
+
 <head>
   <meta charset="UTF-8" />
   <title>Rust Lab</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Tailwind CDN（保持轻量） -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen flex items-center justify-center">
 
-  <div class="bg-gray-800 rounded-xl p-8 w-96 shadow-xl">
-    <h1 class="text-2xl font-bold mb-4">🧪 Rust 实验室</h1>
+<body class="bg-gray-900 text-gray-100">
 
-    <button
-      id="check"
-      class="w-full bg-emerald-600 hover:bg-emerald-500 transition rounded-lg py-2 mb-4"
-    >
-      检查服务器状态
-    </button>
+  <div class="flex h-screen w-full">
 
-    <pre id="output" class="bg-black rounded p-3 text-sm text-emerald-400">
-点击按钮开始实验…
+    <!-- 左侧实验列表 -->
+    <aside class="w-56 bg-gray-800 p-4">
+      <h2 class="font-bold mb-4">🧪 实验列表</h2>
+      <ul id="experiments" class="space-y-2 text-sm"></ul>
+    </aside>
+
+    <!-- 右侧主面板 -->
+    <main class="flex-1 p-8 overflow-auto">
+      <h1 id="title" class="text-2xl font-bold mb-4">Rust 实验室</h1>
+
+      <div id="params" class="flex gap-2 mb-3 hidden">
+        <input id="from" class="bg-black rounded p-2 text-sm w-24" placeholder="from" />
+        <input id="to" class="bg-black rounded p-2 text-sm w-24" placeholder="to" />
+      </div>
+      <textarea id="input" class="w-full bg-black rounded p-2 text-sm mb-3" rows="6" placeholder="请选择一个实验"></textarea>
+
+      <button id="run" class="bg-emerald-600 hover:bg-emerald-500 transition rounded-lg py-2 px-4 mb-4">
+        运行实验
+      </button>
+
+      <pre id="output" class="bg-black rounded p-3 text-sm text-emerald-400 whitespace-pre-wrap">
+请选择一个实验
     </pre>
+    </main>
+
   </div>
 
-<script>
-document.getElementById("check").onclick = async () => {
-  const out = document.getElementById("output");
-  out.textContent = "⏳ 请求中…";
-
-  try {
-    const res = await fetch("/api/health");
-    const data = await res.json();
-    out.textContent = JSON.stringify(data, null, 2);
-  } catch (e) {
-    out.textContent = "❌ 请求失败";
-  }
-};
-</script>
-
+  <!-- 主逻辑 -->
+  <script src="/app.js"></script>
 </body>
-</html>
 
+</html>
