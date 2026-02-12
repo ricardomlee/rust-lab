@@ -11,6 +11,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    outputs:
+      sha: ${{ steps.vars.outputs.SHA_SHORT }}
+
     permissions:
       contents: read
       packages: write
@@ -25,8 +28,16 @@ jobs:
       - name: Build wasm (web)
         run: wasm-pack build wasm --target web --out-dir static/wasm
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Copy wasm output from subcrate (if present)
+        run: |
+          if [ -d wasm/static/wasm ]; then
+            echo "Found wasm output at wasm/static/wasm — copying to static/wasm"
+            rm -rf static/wasm || true
+            mkdir -p static
+            cp -r wasm/static/wasm static/wasm
+          else
+            echo "No wasm/static/wasm directory found; skipping copy"
+          fi
 
       - name: Build release binary
         run: |
@@ -48,8 +59,34 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          no-cache: true
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/rust-lab:latest
             ghcr.io/${{ github.repository_owner }}/rust-lab:sha-${{ steps.vars.outputs.SHA_SHORT }}
+
+  deploy:
+    name: Deploy to remote server
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          script: |
+            set -e
+            # assume image is public on ghcr.io; no login required for pulling
+            IMAGE=ghcr.io/${{ github.repository_owner }}/rust-lab:sha-${{ needs.build.outputs.sha }}
+            echo "Pulling $IMAGE"
+            docker pull $IMAGE
+            echo "Stopping existing container (if any)"
+            docker rm -f rust-lab || true
+            echo "Starting container"
+            docker run -d --name rust-lab --restart unless-stopped -p 3000:3000 $IMAGE
+
 
