@@ -32,3 +32,18 @@ pub fn format_bytes(bytes: u64) -> Result<JsValue, JsValue> {
 
     js_sys::JSON::parse(&json)
 }
+
+#[wasm_bindgen]
+pub fn format_duration(milliseconds: u64) -> Result<JsValue, JsValue> {
+    let formatted = core::duration::format_duration(milliseconds);
+
+    let json = format!(
+        r#"{{"milliseconds":{},"compact":"{}","clock":"{}","verbose_zh":"{}"}}"#,
+        formatted.milliseconds,
+        formatted.compact,
+        formatted.clock,
+        formatted.verbose_zh
+    );
+
+    js_sys::JSON::parse(&json)
+}

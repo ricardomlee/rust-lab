@@ -7,6 +7,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 mod base;
 mod bytes;
+mod duration;
 mod error;
 mod text;
 
@@ -34,4 +35,5 @@ pub fn router() -> Router {
         .route("/text/analyze", post(text::analyze))
         .route("/base/convert", post(base::convert))
         .route("/bytes/format", post(bytes::format))
+        .route("/duration/format", post(duration::format))
 }

@@ -41,6 +41,22 @@ const experiments = {
     supportsWasmCompare: true,
     kind: "bytes",
   },
+  durationFormat: {
+    title: "时长格式化",
+    endpoint: "/api/duration/format",
+    placeholder: "输入毫秒数（如 250、3726045、183845000）",
+    sampleInput: "3726045",
+    defaults: { runs: 20 },
+    help: "同一输入同时走 Rust API 与 WASM worker，输出紧凑写法、时钟写法与中文可读文案，适合任务耗时、倒计时、作业面板、日志展示等小工具。",
+    quickExamples: [
+      { label: "250 ms", value: "250" },
+      { label: "1h 2m 6s", value: "3726045" },
+      { label: "2d 3h 4m 5s", value: "183845000" },
+      { label: "Zero", value: "0" },
+    ],
+    supportsWasmCompare: true,
+    kind: "duration",
+  },
 };
 
 // ========================
@@ -227,6 +243,15 @@ async function runApiBenchmark(runs, endpoint, body) {
         bytes: lastData.bytes,
         binary: lastData.binary,
         decimal: lastData.decimal,
+        binary_per_second: lastData.binary_per_second,
+        decimal_per_second: lastData.decimal_per_second,
+      };
+    } else if (lastData.compact != null && lastData.clock != null) {
+      result = {
+        milliseconds: lastData.milliseconds,
+        compact: lastData.compact,
+        clock: lastData.clock,
+        verbose_zh: lastData.verbose_zh,
       };
     } else {
       result = {
@@ -268,6 +293,13 @@ async function runExperiment() {
       return;
     }
     body = { bytes };
+  } else if (current.kind === "duration") {
+    const milliseconds = Number(input.value.trim());
+    if (!Number.isInteger(milliseconds) || milliseconds < 0) {
+      output.textContent = "❌ 请输入非负整数的毫秒数";
+      return;
+    }
+    body = { milliseconds };
   } else if (current.params) {
     body = {
       value: input.value,
@@ -295,6 +327,17 @@ async function runExperiment() {
       compare.wasm = await runWorkerBenchmark(runs, () => ({
         type: 'formatBytes',
         bytes: body.bytes,
+      }));
+      compare.api = await runApiBenchmark(runs, current.endpoint, body);
+      output.textContent = JSON.stringify(compare, null, 2);
+      return;
+    }
+
+    if (current.kind === "duration") {
+      const compare = {};
+      compare.wasm = await runWorkerBenchmark(runs, () => ({
+        type: 'formatDuration',
+        milliseconds: body.milliseconds,
       }));
       compare.api = await runApiBenchmark(runs, current.endpoint, body);
       output.textContent = JSON.stringify(compare, null, 2);
