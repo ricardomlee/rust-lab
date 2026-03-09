@@ -3,7 +3,6 @@ let ready = false;
 
 async function initWasm() {
   try {
-    // sanity-check the wasm JS module before dynamic import to surface clear errors
     try {
       const head = await fetch('/wasm/wasm_lab.js', { method: 'HEAD' });
       if (!head.ok) {
@@ -28,19 +27,29 @@ initWasm();
 
 onmessage = function (ev) {
   const m = ev.data;
-  if (m && m.type === 'convert') {
-    if (!ready || !wasm) {
-      postMessage({ id: m.id, error: 'wasm not ready' });
-      return;
-    }
+  if (!m) return;
 
-    try {
+  if (!ready || !wasm) {
+    postMessage({ id: m.id, error: 'wasm not ready' });
+    return;
+  }
+
+  try {
+    if (m.type === 'convert') {
       const s = performance.now();
       const result = wasm.base_convert(m.value, m.from, m.to);
       const elapsed_us = Math.round((performance.now() - s) * 1000);
       postMessage({ id: m.id, result, elapsed_us });
-    } catch (e) {
-      postMessage({ id: m.id, error: String(e) });
+      return;
     }
+
+    if (m.type === 'textAnalyze') {
+      const s = performance.now();
+      const result = wasm.analyze_text(m.text);
+      const elapsed_us = Math.round((performance.now() - s) * 1000);
+      postMessage({ id: m.id, result, elapsed_us });
+    }
+  } catch (e) {
+    postMessage({ id: m.id, error: String(e) });
   }
 };

@@ -7,7 +7,8 @@ const experiments = {
     endpoint: "/api/text/analyze",
     placeholder: "输入文本进行分析",
     sampleInput: "Rust + WASM makes browsers surprisingly capable.\n\nTry me.",
-    help: "统计字符、单词、行数，并计算 SHA-256。",
+    help: "同一输入同时走 Rust API 与 WASM worker，统计字符、单词、行数，并计算 SHA-256。",
+    supportsWasmCompare: true,
   },
   baseConvert: {
     title: "进制转换",
@@ -72,6 +73,14 @@ function initWorker() {
 
 initWorker();
 
+function requestWorker(message) {
+  return new Promise((resolve) => {
+    const id = nextWorkerId++;
+    pending.set(id, resolve);
+    worker.postMessage({ ...message, id });
+  });
+}
+
 // ========================
 // 渲染实验列表
 // ========================
@@ -133,9 +142,73 @@ function selectExperiment(exp) {
     fromInput.value = String(exp.defaults.from ?? "");
     toInput.value = String(exp.defaults.to ?? "");
     runsInput.value = String(exp.defaults.runs ?? 1);
+  } else {
+    runsInput.value = "1";
   }
 
   renderQuickExamples(exp);
+}
+
+async function runWorkerBenchmark(runs, buildRequest) {
+  if (!worker || !workerReady) {
+    return { error: 'wasm worker not ready' };
+  }
+
+  let total_us = 0;
+  let lastResult = null;
+  for (let i = 0; i < runs; i++) {
+    const m = await requestWorker(buildRequest());
+    if (m.error) {
+      return { error: m.error };
+    }
+    lastResult = m.result;
+    total_us += Number(m.elapsed_us || 0);
+  }
+
+  return {
+    result: lastResult,
+    runs,
+    avg_elapsed_us: Math.round(total_us / runs),
+  };
+}
+
+async function runApiBenchmark(runs, endpoint, body) {
+  let total_roundtrip = 0;
+  let total_compute = 0;
+  let lastData = null;
+  let computeAvailable = false;
+
+  for (let i = 0; i < runs; i++) {
+    const s = performance.now();
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const roundtrip_us = Math.round((performance.now() - s) * 1000);
+    const data = await res.json();
+    if (!res.ok) {
+      return { error: data.error };
+    }
+    lastData = data;
+    if (data.elapsed_us != null) {
+      computeAvailable = true;
+      total_compute += Number(data.elapsed_us);
+    }
+    total_roundtrip += roundtrip_us;
+  }
+
+  return {
+    result: lastData.result ?? {
+      chars: lastData.chars,
+      words: lastData.words,
+      lines: lastData.lines,
+      sha256: lastData.sha256,
+    },
+    runs,
+    avg_roundtrip_us: Math.round(total_roundtrip / runs),
+    avg_compute_us: computeAvailable ? Math.round(total_compute / runs) : null,
+  };
 }
 
 // ========================
@@ -149,6 +222,8 @@ async function runExperiment() {
 
   output.textContent = "⏳ 运行中…";
 
+  const runs = Math.max(1, Math.min(1000, Number(runsInput?.value) || 1));
+
   let body = { text: input.value };
 
   if (current.params) {
@@ -158,87 +233,32 @@ async function runExperiment() {
       to: Number(toInput.value),
     };
   }
+
   try {
-    // For experiments with params (like base convert) run both WASM (local) and API (server)
     if (current.params) {
       const compare = {};
-
-      // number of runs (avg)
-      const runs = Math.max(1, Math.min(1000, Number(runsInput?.value) || 1));
-
-      // WASM run via worker (if available) - average over `runs`
-      if (worker && workerReady) {
-        try {
-          let total_us = 0;
-          let lastResult = null;
-          for (let i = 0; i < runs; i++) {
-            const id = nextWorkerId++;
-            const promise = new Promise((resolve) => pending.set(id, resolve));
-            worker.postMessage({ type: 'convert', id, value: body.value, from: body.from, to: body.to });
-            const m = await promise;
-            if (m.error) {
-              compare.wasm = { error: m.error };
-              break;
-            }
-            lastResult = m.result;
-            total_us += Number(m.elapsed_us || 0);
-          }
-          if (!compare.wasm) {
-            compare.wasm = { result: lastResult, runs, avg_elapsed_us: Math.round(total_us / runs) };
-          }
-        } catch (e) {
-          console.warn('WASM worker failed', e);
-          compare.wasm = { error: String(e) };
-        }
-      } else {
-        compare.wasm = { error: 'wasm worker not ready' };
-      }
-
-      // API run
-      try {
-        // API run repeated `runs` times to get averages
-        let total_roundtrip = 0;
-        let total_compute = 0;
-        let lastResult = null;
-        let computeAvailable = false;
-        for (let i = 0; i < runs; i++) {
-          const s = performance.now();
-          const res = await fetch(current.endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-          });
-          const roundtrip_us = Math.round((performance.now() - s) * 1000);
-          const data = await res.json();
-          if (!res.ok) {
-            compare.api = { error: data.error };
-            break;
-          }
-          lastResult = data.result;
-          if (data.elapsed_us != null) {
-            computeAvailable = true;
-            total_compute += Number(data.elapsed_us);
-          }
-          total_roundtrip += roundtrip_us;
-        }
-        if (!compare.api) {
-          compare.api = {
-            result: lastResult,
-            runs,
-            avg_roundtrip_us: Math.round(total_roundtrip / runs),
-            avg_compute_us: computeAvailable ? Math.round(total_compute / runs) : null,
-          };
-        }
-      } catch (e) {
-        console.warn("API call failed", e);
-        compare.api = { error: String(e) };
-      }
-
+      compare.wasm = await runWorkerBenchmark(runs, () => ({
+        type: 'convert',
+        value: body.value,
+        from: body.from,
+        to: body.to,
+      }));
+      compare.api = await runApiBenchmark(runs, current.endpoint, body);
       output.textContent = JSON.stringify(compare, null, 2);
       return;
     }
 
-    // Non-param experiments: fallback to existing API call
+    if (current.supportsWasmCompare) {
+      const compare = {};
+      compare.wasm = await runWorkerBenchmark(runs, () => ({
+        type: 'textAnalyze',
+        text: body.text,
+      }));
+      compare.api = await runApiBenchmark(runs, current.endpoint, body);
+      output.textContent = JSON.stringify(compare, null, 2);
+      return;
+    }
+
     const res = await fetch(current.endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
