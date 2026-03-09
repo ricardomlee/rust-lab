@@ -25,6 +25,22 @@ const experiments = {
       { label: "Base36", value: "zz", from: 36, to: 10 },
     ],
   },
+  bytesFormat: {
+    title: "字节大小格式化",
+    endpoint: "/api/bytes/format",
+    placeholder: "输入字节数（如 1536、1048576、5368709120）",
+    sampleInput: "5368709120",
+    defaults: { runs: 20 },
+    help: "同一输入同时走 Rust API 与 WASM worker，输出 binary（KiB/MiB）/ decimal（KB/MB）大小文案，以及 B/s、KiB/s、MB/s 等速率文案，适合文件大小、下载速度、存储面板等工具原型。",
+    quickExamples: [
+      { label: "1.5 KiB", value: "1536" },
+      { label: "1 MiB", value: "1048576" },
+      { label: "5 GiB", value: "5368709120" },
+      { label: "Tiny", value: "999" },
+    ],
+    supportsWasmCompare: true,
+    kind: "bytes",
+  },
 };
 
 // ========================
@@ -118,11 +134,15 @@ function renderQuickExamples(exp) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "rounded border border-emerald-700 px-3 py-1 text-xs text-emerald-300 hover:bg-emerald-900/40 transition";
-    btn.textContent = `${example.label}: ${example.value} (${example.from}→${example.to})`;
+    btn.textContent = exp.params
+      ? `${example.label}: ${example.value} (${example.from}→${example.to})`
+      : `${example.label}: ${example.value}`;
     btn.onclick = () => {
       input.value = example.value;
-      fromInput.value = String(example.from);
-      toInput.value = String(example.to);
+      if (exp.params) {
+        fromInput.value = String(example.from);
+        toInput.value = String(example.to);
+      }
     };
     quickExamples.appendChild(btn);
   }
@@ -143,6 +163,8 @@ function selectExperiment(exp) {
     toInput.value = String(exp.defaults.to ?? "");
     runsInput.value = String(exp.defaults.runs ?? 1);
   } else {
+    fromInput.value = "";
+    toInput.value = "";
     runsInput.value = "1";
   }
 
@@ -198,13 +220,26 @@ async function runApiBenchmark(runs, endpoint, body) {
     total_roundtrip += roundtrip_us;
   }
 
+  let result = lastData.result;
+  if (result == null) {
+    if (lastData.binary != null && lastData.decimal != null) {
+      result = {
+        bytes: lastData.bytes,
+        binary: lastData.binary,
+        decimal: lastData.decimal,
+      };
+    } else {
+      result = {
+        chars: lastData.chars,
+        words: lastData.words,
+        lines: lastData.lines,
+        sha256: lastData.sha256,
+      };
+    }
+  }
+
   return {
-    result: lastData.result ?? {
-      chars: lastData.chars,
-      words: lastData.words,
-      lines: lastData.lines,
-      sha256: lastData.sha256,
-    },
+    result,
     runs,
     avg_roundtrip_us: Math.round(total_roundtrip / runs),
     avg_compute_us: computeAvailable ? Math.round(total_compute / runs) : null,
@@ -226,7 +261,14 @@ async function runExperiment() {
 
   let body = { text: input.value };
 
-  if (current.params) {
+  if (current.kind === "bytes") {
+    const bytes = Number(input.value.trim());
+    if (!Number.isInteger(bytes) || bytes < 0) {
+      output.textContent = "❌ 请输入非负整数的字节数";
+      return;
+    }
+    body = { bytes };
+  } else if (current.params) {
     body = {
       value: input.value,
       from: Number(fromInput.value),
@@ -242,6 +284,17 @@ async function runExperiment() {
         value: body.value,
         from: body.from,
         to: body.to,
+      }));
+      compare.api = await runApiBenchmark(runs, current.endpoint, body);
+      output.textContent = JSON.stringify(compare, null, 2);
+      return;
+    }
+
+    if (current.kind === "bytes") {
+      const compare = {};
+      compare.wasm = await runWorkerBenchmark(runs, () => ({
+        type: 'formatBytes',
+        bytes: body.bytes,
       }));
       compare.api = await runApiBenchmark(runs, current.endpoint, body);
       output.textContent = JSON.stringify(compare, null, 2);

@@ -48,6 +48,15 @@ onmessage = function (ev) {
       const result = wasm.analyze_text(m.text);
       const elapsed_us = Math.round((performance.now() - s) * 1000);
       postMessage({ id: m.id, result, elapsed_us });
+      return;
+    }
+
+    if (m.type === 'formatBytes') {
+      const s = performance.now();
+      const result = wasm.format_bytes(m.bytes);
+      const elapsed_us = Math.round((performance.now() - s) * 1000);
+      postMessage({ id: m.id, result, elapsed_us });
+      return;
     }
   } catch (e) {
     postMessage({ id: m.id, error: String(e) });

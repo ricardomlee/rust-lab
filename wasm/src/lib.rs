@@ -22,8 +22,12 @@ pub fn format_bytes(bytes: u64) -> Result<JsValue, JsValue> {
     let formatted = core::bytes::format_byte_size(bytes);
 
     let json = format!(
-        r#"{{"bytes":{},"binary":"{}","decimal":"{}"}}"#,
-        formatted.bytes, formatted.binary, formatted.decimal
+        r#"{{"bytes":{},"binary":"{}","decimal":"{}","binary_per_second":"{}","decimal_per_second":"{}"}}"#,
+        formatted.bytes,
+        formatted.binary,
+        formatted.decimal,
+        formatted.binary_per_second,
+        formatted.decimal_per_second
     );
 
     js_sys::JSON::parse(&json)

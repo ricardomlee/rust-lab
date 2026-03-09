@@ -6,6 +6,7 @@ use serde::Serialize;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 mod base;
+mod bytes;
 mod error;
 mod text;
 
@@ -32,4 +33,5 @@ pub fn router() -> Router {
         .route("/health", get(health))
         .route("/text/analyze", post(text::analyze))
         .route("/base/convert", post(base::convert))
+        .route("/bytes/format", post(bytes::format))
 }
