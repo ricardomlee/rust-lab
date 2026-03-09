@@ -71,3 +71,22 @@ pub fn format_percent(value: f64) -> Result<JsValue, JsValue> {
     .to_string()
     .into())
 }
+
+
+#[wasm_bindgen]
+pub fn format_countdown(total_seconds: i64) -> Result<JsValue, JsValue> {
+    let formatted = core::countdown::format_countdown(total_seconds);
+    Ok(serde_json::json!({
+        "total_seconds": formatted.total_seconds,
+        "sign": formatted.sign,
+        "days": formatted.days,
+        "hours": formatted.hours,
+        "minutes": formatted.minutes,
+        "seconds": formatted.seconds,
+        "clock": formatted.clock,
+        "compact": formatted.compact,
+        "status": formatted.status,
+    })
+    .to_string()
+    .into())
+}

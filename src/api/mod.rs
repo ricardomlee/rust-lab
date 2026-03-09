@@ -7,6 +7,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 mod base;
 mod bytes;
+mod countdown;
 mod duration;
 mod error;
 mod frame_time;
@@ -37,6 +38,7 @@ pub fn router() -> Router {
         .route("/text/analyze", post(text::analyze))
         .route("/base/convert", post(base::convert))
         .route("/bytes/format", post(bytes::format))
+        .route("/countdown/format", post(countdown::format))
         .route("/duration/format", post(duration::format))
         .route("/frame-time/format", post(frame_time::format))
         .route("/percent/format", post(percent::format))

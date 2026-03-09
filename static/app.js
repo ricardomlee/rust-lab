@@ -73,6 +73,23 @@ const experiments = {
     supportsWasmCompare: true,
     kind: "frameTime",
   },
+  countdownFormat: {
+    title: "倒计时拆解",
+    endpoint: "/api/countdown/format",
+    placeholder: "输入秒数（如 45、3726、-30、900610）",
+    sampleInput: "3726",
+    defaults: { runs: 20 },
+    help: "同一输入同时走 Rust API 与 WASM worker，把倒计时秒数拆成 d/h/m/s、时钟文案和状态提示，适合活动倒计时、任务到期提醒、排程面板等小工具。",
+    quickExamples: [
+      { label: "Due now", value: "0" },
+      { label: "In 45s", value: "45" },
+      { label: "1h 2m 6s", value: "3726" },
+      { label: "Expired", value: "-30" },
+      { label: "10d 10:10:10", value: "900610" },
+    ],
+    supportsWasmCompare: true,
+    kind: "countdown",
+  },
   percentFormat: {
     title: "百分比格式化",
     endpoint: "/api/percent/format",
@@ -292,6 +309,18 @@ async function runApiBenchmark(runs, endpoint, body) {
         label: lastData.label,
         quality_hint: lastData.quality_hint,
       };
+    } else if (lastData.total_seconds != null && lastData.clock != null && lastData.status != null) {
+      result = {
+        total_seconds: lastData.total_seconds,
+        sign: lastData.sign,
+        days: lastData.days,
+        hours: lastData.hours,
+        minutes: lastData.minutes,
+        seconds: lastData.seconds,
+        clock: lastData.clock,
+        compact: lastData.compact,
+        status: lastData.status,
+      };
     } else {
       result = {
         chars: lastData.chars,
@@ -346,6 +375,13 @@ async function runExperiment() {
       return;
     }
     body = { fps };
+  } else if (current.kind === "countdown") {
+    const total_seconds = Number(input.value.trim());
+    if (!Number.isInteger(total_seconds)) {
+      output.textContent = "❌ 请输入整数秒数";
+      return;
+    }
+    body = { total_seconds };
   } else if (current.kind === "percent") {
     const value = Number(input.value.trim());
     if (!Number.isFinite(value)) {
@@ -402,6 +438,17 @@ async function runExperiment() {
       compare.wasm = await runWorkerBenchmark(runs, () => ({
         type: 'formatFrameTime',
         fps: body.fps,
+      }));
+      compare.api = await runApiBenchmark(runs, current.endpoint, body);
+      output.textContent = JSON.stringify(compare, null, 2);
+      return;
+    }
+
+    if (current.kind === "countdown") {
+      const compare = {};
+      compare.wasm = await runWorkerBenchmark(runs, () => ({
+        type: "formatCountdown",
+        total_seconds: body.total_seconds,
       }));
       compare.api = await runApiBenchmark(runs, current.endpoint, body);
       output.textContent = JSON.stringify(compare, null, 2);
