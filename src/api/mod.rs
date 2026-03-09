@@ -10,6 +10,7 @@ mod bytes;
 mod duration;
 mod error;
 mod frame_time;
+mod percent;
 mod text;
 
 #[derive(Serialize)]
@@ -38,4 +39,5 @@ pub fn router() -> Router {
         .route("/bytes/format", post(bytes::format))
         .route("/duration/format", post(duration::format))
         .route("/frame-time/format", post(frame_time::format))
+        .route("/percent/format", post(percent::format))
 }

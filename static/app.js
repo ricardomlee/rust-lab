@@ -73,6 +73,22 @@ const experiments = {
     supportsWasmCompare: true,
     kind: "frameTime",
   },
+  percentFormat: {
+    title: "百分比格式化",
+    endpoint: "/api/percent/format",
+    placeholder: "输入 0–1 之间的小数（如 0.0325、0.875、1）",
+    sampleInput: "0.875",
+    defaults: { runs: 20 },
+    help: "同一输入同时走 Rust API 与 WASM worker，把比例值格式化为百分比、ratio 文案和健康提示，适合仪表盘、进度条、监控卡片等小工具。",
+    quickExamples: [
+      { label: "Tiny", value: "0.0325" },
+      { label: "Healthy", value: "0.875" },
+      { label: "Full", value: "1" },
+      { label: "Overflow clamp", value: "1.42" },
+    ],
+    supportsWasmCompare: true,
+    kind: "percent",
+  },
 };
 
 // ========================
@@ -330,6 +346,13 @@ async function runExperiment() {
       return;
     }
     body = { fps };
+  } else if (current.kind === "percent") {
+    const value = Number(input.value.trim());
+    if (!Number.isFinite(value)) {
+      output.textContent = "❌ 请输入有效数字";
+      return;
+    }
+    body = { value };
   } else if (current.params) {
     body = {
       value: input.value,
@@ -379,6 +402,17 @@ async function runExperiment() {
       compare.wasm = await runWorkerBenchmark(runs, () => ({
         type: 'formatFrameTime',
         fps: body.fps,
+      }));
+      compare.api = await runApiBenchmark(runs, current.endpoint, body);
+      output.textContent = JSON.stringify(compare, null, 2);
+      return;
+    }
+
+    if (current.kind === "percent") {
+      const compare = {};
+      compare.wasm = await runWorkerBenchmark(runs, () => ({
+        type: 'formatPercent',
+        value: body.value,
       }));
       compare.api = await runApiBenchmark(runs, current.endpoint, body);
       output.textContent = JSON.stringify(compare, null, 2);
