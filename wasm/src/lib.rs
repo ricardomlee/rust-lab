@@ -16,3 +16,15 @@ pub fn analyze_text(text: &str) -> Result<JsValue, JsValue> {
 
     js_sys::JSON::parse(&json)
 }
+
+#[wasm_bindgen]
+pub fn format_bytes(bytes: u64) -> Result<JsValue, JsValue> {
+    let formatted = core::bytes::format_byte_size(bytes);
+
+    let json = format!(
+        r#"{{"bytes":{},"binary":"{}","decimal":"{}"}}"#,
+        formatted.bytes, formatted.binary, formatted.decimal
+    );
+
+    js_sys::JSON::parse(&json)
+}
