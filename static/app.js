@@ -57,6 +57,22 @@ const experiments = {
     supportsWasmCompare: true,
     kind: "duration",
   },
+  frameTimeFormat: {
+    title: "帧时间换算",
+    endpoint: "/api/frame-time/format",
+    placeholder: "输入 FPS（如 24、60、144、23.976）",
+    sampleInput: "60",
+    defaults: { runs: 20 },
+    help: "同一输入同时走 Rust API 与 WASM worker，把 FPS 换算成每帧耗时并附带可读标签，适合动画、游戏、渲染与性能面板类小工具。",
+    quickExamples: [
+      { label: "Cinema", value: "24" },
+      { label: "Smooth", value: "60" },
+      { label: "High Refresh", value: "144" },
+      { label: "NTSC", value: "23.976" },
+    ],
+    supportsWasmCompare: true,
+    kind: "frameTime",
+  },
 };
 
 // ========================
@@ -253,6 +269,13 @@ async function runApiBenchmark(runs, endpoint, body) {
         clock: lastData.clock,
         verbose_zh: lastData.verbose_zh,
       };
+    } else if (lastData.frame_ms != null && lastData.label != null) {
+      result = {
+        fps: lastData.fps,
+        frame_ms: lastData.frame_ms,
+        label: lastData.label,
+        quality_hint: lastData.quality_hint,
+      };
     } else {
       result = {
         chars: lastData.chars,
@@ -300,6 +323,13 @@ async function runExperiment() {
       return;
     }
     body = { milliseconds };
+  } else if (current.kind === "frameTime") {
+    const fps = Number(input.value.trim());
+    if (!Number.isFinite(fps) || fps <= 0) {
+      output.textContent = "❌ 请输入大于 0 的 FPS 数值";
+      return;
+    }
+    body = { fps };
   } else if (current.params) {
     body = {
       value: input.value,
@@ -338,6 +368,17 @@ async function runExperiment() {
       compare.wasm = await runWorkerBenchmark(runs, () => ({
         type: 'formatDuration',
         milliseconds: body.milliseconds,
+      }));
+      compare.api = await runApiBenchmark(runs, current.endpoint, body);
+      output.textContent = JSON.stringify(compare, null, 2);
+      return;
+    }
+
+    if (current.kind === "frameTime") {
+      const compare = {};
+      compare.wasm = await runWorkerBenchmark(runs, () => ({
+        type: 'formatFrameTime',
+        fps: body.fps,
       }));
       compare.api = await runApiBenchmark(runs, current.endpoint, body);
       output.textContent = JSON.stringify(compare, null, 2);

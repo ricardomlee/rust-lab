@@ -47,3 +47,18 @@ pub fn format_duration(milliseconds: u64) -> Result<JsValue, JsValue> {
 
     js_sys::JSON::parse(&json)
 }
+
+#[wasm_bindgen]
+pub fn format_frame_time(fps: f64) -> Result<JsValue, JsValue> {
+    let formatted = core::frame_time::format_frame_time(fps).map_err(JsValue::from_str)?;
+
+    let json = format!(
+        r#"{{"fps":{},"frame_ms":{},"label":"{}","quality_hint":"{}"}}"#,
+        formatted.fps,
+        formatted.frame_ms,
+        formatted.label,
+        formatted.quality_hint
+    );
+
+    js_sys::JSON::parse(&json)
+}
