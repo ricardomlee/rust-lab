@@ -19,9 +19,7 @@ pub struct TextResult {
     pub elapsed_us: u128,
 }
 
-pub async fn analyze(
-    Json(req): Json<TextRequest>,
-) -> Result<Json<TextResult>, ApiError> {
+pub async fn analyze(Json(req): Json<TextRequest>) -> Result<Json<TextResult>, ApiError> {
     if req.text.trim().is_empty() {
         return Err(ApiError::BadRequest("文本不能为空".into()));
     }

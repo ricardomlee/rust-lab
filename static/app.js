@@ -6,12 +6,23 @@ const experiments = {
     title: "文本分析",
     endpoint: "/api/text/analyze",
     placeholder: "输入文本进行分析",
+    sampleInput: "Rust + WASM makes browsers surprisingly capable.\n\nTry me.",
+    help: "统计字符、单词、行数，并计算 SHA-256。",
   },
-    baseConvert: {
+  baseConvert: {
     title: "进制转换",
     endpoint: "/api/base/convert",
     placeholder: "输入数字（如 ff、1011、-42）",
     params: ["from", "to"],
+    sampleInput: "ff",
+    defaults: { from: 16, to: 10, runs: 5 },
+    help: "同一输入同时走 Rust API 与 WASM worker，便于比较结果和耗时。支持 2–36 进制与负数。",
+    quickExamples: [
+      { label: "Hex → Dec", value: "ff", from: 16, to: 10 },
+      { label: "Bin → Hex", value: "101101", from: 2, to: 16 },
+      { label: "Negative", value: "-42", from: 10, to: 2 },
+      { label: "Base36", value: "zz", from: 36, to: 10 },
+    ],
   },
 };
 
@@ -24,6 +35,8 @@ const input = document.getElementById("input");
 const output = document.getElementById("output");
 const runBtn = document.getElementById("run");
 const runsInput = document.getElementById("runs");
+const helpText = document.getElementById("help");
+const quickExamples = document.getElementById("quick-examples");
 
 let current = null;
 let worker = null;
@@ -79,21 +92,55 @@ function renderExperiments() {
 // 选择实验
 // ========================
 const paramsDiv = document.getElementById("params");
+const fromInput = document.getElementById("from");
+const toInput = document.getElementById("to");
+
+function renderQuickExamples(exp) {
+  quickExamples.innerHTML = "";
+
+  if (!exp.quickExamples?.length) {
+    quickExamples.classList.add("hidden");
+    return;
+  }
+
+  quickExamples.classList.remove("hidden");
+
+  for (const example of exp.quickExamples) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "rounded border border-emerald-700 px-3 py-1 text-xs text-emerald-300 hover:bg-emerald-900/40 transition";
+    btn.textContent = `${example.label}: ${example.value} (${example.from}→${example.to})`;
+    btn.onclick = () => {
+      input.value = example.value;
+      fromInput.value = String(example.from);
+      toInput.value = String(example.to);
+    };
+    quickExamples.appendChild(btn);
+  }
+}
+
 function selectExperiment(exp) {
   current = exp;
   title.textContent = exp.title;
   input.placeholder = exp.placeholder;
-  input.value = "";
+  input.value = exp.sampleInput ?? "";
   output.textContent = "等待输入…";
+  helpText.textContent = exp.help ?? "";
 
   paramsDiv.classList.toggle("hidden", !exp.params);
+
+  if (exp.defaults) {
+    fromInput.value = String(exp.defaults.from ?? "");
+    toInput.value = String(exp.defaults.to ?? "");
+    runsInput.value = String(exp.defaults.runs ?? 1);
+  }
+
+  renderQuickExamples(exp);
 }
 
 // ========================
 // 运行实验
 // ========================
-const fromInput = document.getElementById("from");
-const toInput = document.getElementById("to");
 async function runExperiment() {
   if (!current) {
     output.textContent = "❗ 请先选择一个实验";
@@ -221,3 +268,4 @@ runBtn.onclick = runExperiment;
 // 启动
 // ========================
 renderExperiments();
+selectExperiment(experiments.baseConvert);

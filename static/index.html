@@ -22,13 +22,17 @@
 
     <!-- 右侧主面板 -->
     <main class="flex-1 p-8 overflow-auto">
-      <h1 id="title" class="text-2xl font-bold mb-4">Rust 实验室</h1>
+      <h1 id="title" class="text-2xl font-bold mb-2">Rust 实验室</h1>
+      <p id="help" class="mb-4 text-sm text-gray-400"></p>
 
       <div id="params" class="flex gap-2 mb-3 hidden">
         <input id="from" class="bg-black rounded p-2 text-sm w-24" placeholder="from" />
         <input id="to" class="bg-black rounded p-2 text-sm w-24" placeholder="to" />
         <input id="runs" class="bg-black rounded p-2 text-sm w-24" placeholder="runs (avg)" value="1" />
       </div>
+
+      <div id="quick-examples" class="mb-3 flex flex-wrap gap-2 hidden"></div>
+
       <textarea id="input" class="w-full bg-black rounded p-2 text-sm mb-3" rows="6" placeholder="请选择一个实验"></textarea>
 
       <button id="run" class="bg-emerald-600 hover:bg-emerald-500 transition rounded-lg py-2 px-4 mb-4">
