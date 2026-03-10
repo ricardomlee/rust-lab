@@ -90,3 +90,81 @@ pub fn format_countdown(total_seconds: i64) -> Result<JsValue, JsValue> {
     .to_string()
     .into())
 }
+
+#[wasm_bindgen]
+pub fn hex_to_rgba(hex: &str) -> Result<JsValue, JsValue> {
+    let (r, g, b, a) = core::color::hex_to_rgba(hex).map_err(JsValue::from_str)?;
+    Ok(serde_json::json!({
+        "r": r,
+        "g": g,
+        "b": b,
+        "a": a,
+        "css": core::color::format_rgba(r, g, b, a),
+    })
+    .to_string()
+    .into())
+}
+
+#[wasm_bindgen]
+pub fn rgb_to_hex(r: u8, g: u8, b: u8) -> Result<JsValue, JsValue> {
+    Ok(JsValue::from_str(&core::color::rgb_to_hex(r, g, b)))
+}
+
+#[wasm_bindgen]
+pub fn rgb_to_hsl(r: u8, g: u8, b: u8) -> Result<JsValue, JsValue> {
+    let (h, s, l) = core::color::rgb_to_hsl(r, g, b);
+    Ok(serde_json::json!({
+        "h": h,
+        "s": s,
+        "l": l,
+        "css": core::color::format_hsl(h, s, l),
+    })
+    .to_string()
+    .into())
+}
+
+#[wasm_bindgen]
+pub fn hsl_to_rgb(h: f64, s: f64, l: f64) -> Result<JsValue, JsValue> {
+    let (r, g, b) = core::color::hsl_to_rgb(h, s, l);
+    Ok(serde_json::json!({
+        "r": r,
+        "g": g,
+        "b": b,
+        "hex": core::color::rgb_to_hex(r, g, b),
+        "css": format!("rgb({}, {}, {})", r, g, b),
+    })
+    .to_string()
+    .into())
+}
+
+#[wasm_bindgen]
+pub fn blend_colors(r1: u8, g1: u8, b1: u8, r2: u8, g2: u8, b2: u8, ratio: f64) -> Result<JsValue, JsValue> {
+    let (r, g, b) = core::color::blend_colors(r1, g1, b1, r2, g2, b2, ratio);
+    Ok(serde_json::json!({
+        "r": r,
+        "g": g,
+        "b": b,
+        "hex": core::color::rgb_to_hex(r, g, b),
+        "css": format!("rgb({}, {}, {})", r, g, b),
+    })
+    .to_string()
+    .into())
+}
+
+#[wasm_bindgen]
+pub fn generate_palette(r1: u8, g1: u8, b1: u8, r2: u8, g2: u8, b2: u8, steps: usize) -> Result<JsValue, JsValue> {
+    let palette = core::color::generate_palette(r1, g1, b1, r2, g2, b2, steps);
+    let colors: Vec<JsValue> = palette
+        .iter()
+        .map(|(r, g, b)| {
+            serde_json::json!({
+                "r": r,
+                "g": g,
+                "b": b,
+                "hex": core::color::rgb_to_hex(*r, *g, *b),
+            })
+        })
+        .map(|v| JsValue::from_str(&v.to_string()))
+        .collect();
+    Ok(JsValue::from(js_sys::Array::from_iter(colors)))
+}
