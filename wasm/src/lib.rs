@@ -287,3 +287,19 @@ pub fn word_frequency(text: &str) -> Result<JsValue, JsValue> {
 pub fn first_n_words(text: &str, n: usize) -> Result<JsValue, JsValue> {
     Ok(JsValue::from_str(&core::text::first_n_words(text, n)))
 }
+
+#[wasm_bindgen]
+pub fn format_elapsed(micros: u64) -> Result<JsValue, JsValue> {
+    let duration = std::time::Duration::from_micros(micros);
+    Ok(JsValue::from_str(&core::time_utils::format_elapsed(duration)))
+}
+
+#[wasm_bindgen]
+pub fn fps_from_frame_time_ms(frame_time_ms: f64) -> Result<JsValue, JsValue> {
+    Ok(JsValue::from_f64(core::time_utils::fps_from_frame_time_ms(frame_time_ms)))
+}
+
+#[wasm_bindgen]
+pub fn frame_time_from_fps(fps: f64) -> Result<JsValue, JsValue> {
+    Ok(JsValue::from_f64(core::time_utils::frame_time_from_fps(fps)))
+}

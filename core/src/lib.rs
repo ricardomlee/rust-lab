@@ -8,6 +8,8 @@ pub mod frame_time;
 pub mod hash;
 pub mod percent;
 pub mod text;
+pub mod time_utils;
+pub mod uuid_gen;
 
 pub use base::*;
 pub use base64::*;
@@ -19,5 +21,5 @@ pub use frame_time::*;
 pub use hash::*;
 pub use percent::*;
 pub use text::*;
-pub mod uuid_gen;
+pub use time_utils::*;
 pub use uuid_gen::*;
