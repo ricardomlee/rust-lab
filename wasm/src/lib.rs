@@ -2,7 +2,7 @@ use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub fn analyze_text(text: &str) -> Result<JsValue, JsValue> {
-    let analysis = core::text::analyze(text).map_err(JsValue::from_str)?;
+    let analysis = core::text::analyze(text).map_err(|e| JsValue::from_str(&e))?;
     Ok(serde_json::json!({
         "chars": analysis.chars,
         "words": analysis.words,
@@ -15,7 +15,7 @@ pub fn analyze_text(text: &str) -> Result<JsValue, JsValue> {
 
 #[wasm_bindgen]
 pub fn base_convert(value: &str, from: u32, to: u32) -> Result<JsValue, JsValue> {
-    let result = core::base::convert(value, from, to).map_err(JsValue::from_str)?;
+    let result = core::base::convert(value, from, to).map_err(|e| JsValue::from_str(&e))?;
     Ok(JsValue::from_str(&result))
 }
 
@@ -48,7 +48,7 @@ pub fn format_duration(milliseconds: u64) -> Result<JsValue, JsValue> {
 
 #[wasm_bindgen]
 pub fn format_frame_time(fps: f64) -> Result<JsValue, JsValue> {
-    let formatted = core::frame_time::format_frame_time(fps).map_err(JsValue::from_str)?;
+    let formatted = core::frame_time::format_frame_time(fps).map_err(|e| JsValue::from_str(&e))?;
     Ok(serde_json::json!({
         "fps": formatted.fps,
         "frame_ms": formatted.frame_ms,
@@ -61,7 +61,7 @@ pub fn format_frame_time(fps: f64) -> Result<JsValue, JsValue> {
 
 #[wasm_bindgen]
 pub fn format_percent(value: f64) -> Result<JsValue, JsValue> {
-    let formatted = core::percent::format_percent(value).map_err(JsValue::from_str)?;
+    let formatted = core::percent::format_percent(value).map_err(|e| JsValue::from_str(&e))?;
     Ok(serde_json::json!({
         "value": formatted.value,
         "percent": formatted.percent,
@@ -93,7 +93,7 @@ pub fn format_countdown(total_seconds: i64) -> Result<JsValue, JsValue> {
 
 #[wasm_bindgen]
 pub fn hex_to_rgba(hex: &str) -> Result<JsValue, JsValue> {
-    let (r, g, b, a) = core::color::hex_to_rgba(hex).map_err(JsValue::from_str)?;
+    let (r, g, b, a) = core::color::hex_to_rgba(hex).map_err(|e| JsValue::from_str(&e))?;
     Ok(serde_json::json!({
         "r": r,
         "g": g,
@@ -167,4 +167,57 @@ pub fn generate_palette(r1: u8, g1: u8, b1: u8, r2: u8, g2: u8, b2: u8, steps: u
         .map(|v| JsValue::from_str(&v.to_string()))
         .collect();
     Ok(JsValue::from(js_sys::Array::from_iter(colors)))
+}
+
+#[wasm_bindgen]
+pub fn base64_encode(input: &str, url_safe: bool) -> Result<JsValue, JsValue> {
+    let result = core::base64::encode_full(input, url_safe);
+    Ok(serde_json::json!({
+        "value": result.value,
+        "original": result.original,
+        "operation": result.operation,
+        "variant": result.variant,
+    })
+    .to_string()
+    .into())
+}
+
+#[wasm_bindgen]
+pub fn base64_decode(encoded: &str, url_safe: bool) -> Result<JsValue, JsValue> {
+    match core::base64::decode_full(encoded, url_safe) {
+        Ok(result) => Ok(serde_json::json!({
+            "value": result.value,
+            "original": result.original,
+            "operation": result.operation,
+            "variant": result.variant,
+        })
+        .to_string()
+        .into()),
+        Err(e) => Err(JsValue::from_str(&e)),
+    }
+}
+
+#[wasm_bindgen]
+pub fn hash_compute(input: &str, algorithm: &str) -> Result<JsValue, JsValue> {
+    let result = core::hash::hash_full(input, algorithm);
+    Ok(serde_json::json!({
+        "input": result.input,
+        "algorithm": result.algorithm,
+        "hash": result.hash,
+    })
+    .to_string()
+    .into())
+}
+
+#[wasm_bindgen]
+pub fn hash_verify(input: &str, expected_hash: &str, algorithm: &str) -> Result<JsValue, JsValue> {
+    let valid = core::hash::verify_hash(input, expected_hash, algorithm);
+    Ok(serde_json::json!({
+        "input": input,
+        "expected": expected_hash,
+        "algorithm": algorithm,
+        "valid": valid,
+    })
+    .to_string()
+    .into())
 }

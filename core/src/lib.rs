@@ -1,17 +1,21 @@
 pub mod base;
+pub mod base64;
 pub mod bytes;
 pub mod color;
 pub mod countdown;
 pub mod duration;
 pub mod frame_time;
+pub mod hash;
 pub mod percent;
 pub mod text;
 
 pub use base::*;
+pub use base64::*;
 pub use bytes::*;
 pub use color::*;
 pub use countdown::*;
 pub use duration::*;
 pub use frame_time::*;
+pub use hash::*;
 pub use percent::*;
 pub use text::*;
