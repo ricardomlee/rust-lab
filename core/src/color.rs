@@ -197,10 +197,10 @@ mod tests {
         assert!((s - 100.0).abs() < 1.0);
         assert!((l - 50.0).abs() < 1.0);
 
-        let (h, s, l) = rgb_to_hsl(0, 255, 0);
+        let (h, _s, _l) = rgb_to_hsl(0, 255, 0);
         assert!((h - 120.0).abs() < 1.0);
 
-        let (h, s, l) = rgb_to_hsl(0, 0, 255);
+        let (h, _s, _l) = rgb_to_hsl(0, 0, 255);
         assert!((h - 240.0).abs() < 1.0);
     }
 

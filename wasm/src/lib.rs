@@ -256,3 +256,34 @@ pub fn validate_uuid(uuid: &str) -> Result<JsValue, JsValue> {
     .to_string()
     .into())
 }
+
+#[wasm_bindgen]
+pub fn slugify(text: &str) -> Result<JsValue, JsValue> {
+    Ok(JsValue::from_str(&core::text::slugify(text)))
+}
+
+#[wasm_bindgen]
+pub fn truncate(text: &str, max_len: usize) -> Result<JsValue, JsValue> {
+    Ok(JsValue::from_str(&core::text::truncate(text, max_len)))
+}
+
+#[wasm_bindgen]
+pub fn word_frequency(text: &str) -> Result<JsValue, JsValue> {
+    let freq = core::text::word_frequency(text);
+    let result: Vec<JsValue> = freq
+        .iter()
+        .map(|(word, count)| {
+            serde_json::json!({
+                "word": word,
+                "count": count,
+            })
+        })
+        .map(|v| JsValue::from_str(&v.to_string()))
+        .collect();
+    Ok(JsValue::from(js_sys::Array::from_iter(result)))
+}
+
+#[wasm_bindgen]
+pub fn first_n_words(text: &str, n: usize) -> Result<JsValue, JsValue> {
+    Ok(JsValue::from_str(&core::text::first_n_words(text, n)))
+}
