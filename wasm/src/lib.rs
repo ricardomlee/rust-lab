@@ -303,3 +303,40 @@ pub fn fps_from_frame_time_ms(frame_time_ms: f64) -> Result<JsValue, JsValue> {
 pub fn frame_time_from_fps(fps: f64) -> Result<JsValue, JsValue> {
     Ok(JsValue::from_f64(core::time_utils::frame_time_from_fps(fps)))
 }
+
+// Number formatting utilities
+
+#[wasm_bindgen]
+pub fn format_number_with_commas(n: u64) -> Result<JsValue, JsValue> {
+    Ok(JsValue::from_str(&core::number::format_with_commas(n)))
+}
+
+#[wasm_bindgen]
+pub fn format_number_signed(n: i64) -> Result<JsValue, JsValue> {
+    Ok(JsValue::from_str(&core::number::format_with_commas_signed(n)))
+}
+
+#[wasm_bindgen]
+pub fn format_currency_usd(cents: u64) -> Result<JsValue, JsValue> {
+    Ok(JsValue::from_str(&core::number::format_currency(cents)))
+}
+
+#[wasm_bindgen]
+pub fn format_number_scientific(n: f64, precision: usize) -> Result<JsValue, JsValue> {
+    Ok(JsValue::from_str(&core::number::format_scientific(n, precision)))
+}
+
+#[wasm_bindgen]
+pub fn format_ordinal(n: u64) -> Result<JsValue, JsValue> {
+    Ok(JsValue::from_str(&core::number::format_ordinal(n)))
+}
+
+#[wasm_bindgen]
+pub fn format_number_decimal(n: f64, decimals: usize) -> Result<JsValue, JsValue> {
+    Ok(JsValue::from_str(&core::number::format_decimal(n, decimals)))
+}
+
+#[wasm_bindgen]
+pub fn format_number_compact(n: u64) -> Result<JsValue, JsValue> {
+    Ok(JsValue::from_str(&core::number::format_compact(n)))
+}
