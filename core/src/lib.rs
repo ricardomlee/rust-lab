@@ -19,3 +19,5 @@ pub use frame_time::*;
 pub use hash::*;
 pub use percent::*;
 pub use text::*;
+pub mod uuid_gen;
+pub use uuid_gen::*;

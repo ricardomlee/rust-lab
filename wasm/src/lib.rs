@@ -221,3 +221,38 @@ pub fn hash_verify(input: &str, expected_hash: &str, algorithm: &str) -> Result<
     .to_string()
     .into())
 }
+
+#[wasm_bindgen]
+pub fn generate_uuid() -> Result<JsValue, JsValue> {
+    let uuid = core::uuid_gen::generate_uuid();
+    Ok(serde_json::json!({
+        "uuid": uuid,
+        "version": 4,
+        "variant": "RFC4122",
+    })
+    .to_string()
+    .into())
+}
+
+#[wasm_bindgen]
+pub fn generate_short_id() -> Result<JsValue, JsValue> {
+    let id = core::uuid_gen::generate_short_id();
+    Ok(serde_json::json!({
+        "id": id,
+        "length": id.len(),
+        "url_safe": true,
+    })
+    .to_string()
+    .into())
+}
+
+#[wasm_bindgen]
+pub fn validate_uuid(uuid: &str) -> Result<JsValue, JsValue> {
+    let valid = core::uuid_gen::is_valid_uuid(uuid);
+    Ok(serde_json::json!({
+        "uuid": uuid,
+        "valid": valid,
+    })
+    .to_string()
+    .into())
+}
