@@ -1,6 +1,4 @@
-use axum::{
-    Router,
-};
+use axum::Router;
 use tower_http::services::ServeDir;
 use tracing_subscriber::fmt::init;
 
@@ -21,15 +19,15 @@ async fn main() {
     if wasm_js_path.exists() {
         println!("✅ Found {}", wasm_js_path.display());
     } else {
-        println!("⚠️ Missing {} — worker fetch may 404", wasm_js_path.display());
+        println!(
+            "⚠️ Missing {} — worker fetch may 404",
+            wasm_js_path.display()
+        );
     }
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
 
     println!("🚀 Rust Lab running on http://localhost:3000");
 
     axum::serve(listener, app).await.unwrap();
 }
-
